@@ -22,6 +22,8 @@ RAW_SHAPES = {
 PENTOMINOS = [np.array(shape, dtype=bool) for shape in RAW_SHAPES.values()]
 
 
+# On crée les fonctions permettant d'obtenir toutes les orientations possibles pour une figure donnée
+
 # +
 def symetrie(mat):
     return mat[::-1]
@@ -30,41 +32,101 @@ def rotate_90(mat):
     return symetrie(mat.T)
 
 def add_orientation(orient, orients):
-    if orient not in orients:
-        orients.append(orient)
+    for or_poss in orients :
+        if np.array_equal(orient, or_poss) :
+            return None
+    orients.append(orient)
     return None
 
 def orientations(shape):
-    orientations = []
-    add_orientation(shape, orientations)
+    orient = []
+    add_orientation(shape, orient)
 
     ## on ajoute les rotations
     rotated_90 = rotate_90(shape)
-    add_orientation(rotated_90, orientations)
+    add_orientation(rotated_90, orient)
 
     rotated_180 = rotate_90(rotated_90)
-    add_orientation(rotated_180, orientations)
+    add_orientation(rotated_180, orient)
 
     rotated_270 = rotate_90(rotated_180)
-    add_orientation(rotated_270, orientations)
+    add_orientation(rotated_270, orient)
 
     ## on ajoute la symétrie et ses rotations
     reflected = symetrie(shape)
-    add_orientation(reflected, orientations)
+    add_orientation(reflected, orient)
         
     rotated_90r = rotate_90(reflected)
-    add_orientation(rotated_90r, orientations)
+    add_orientation(rotated_90r, orient)
 
     rotated_180r = rotate_90(rotated_90r)
-    add_orientation(rotated_180r, orientations)
+    add_orientation(rotated_180r, orient)
 
     rotated_270r = rotate_90(rotated_180r)
-    add_orientation(rotated_270r, orientations)
+    add_orientation(rotated_270r, orient)
+    return orient
+
+
+# -
+
+# On crée la fonction permettant d'obtenir les positions possibles d'une figure dans le tableau global
+
+# +
+def tuple_to_number(position, board):
+    h, l = board.shape
+    x, y = position
+    return (x*l)+y
+
+def get_valid_positions(shape, board):
+    h, l = board.shape
+    
+    valid_positions = []
+    coords = [(x,y) for x in range(len(shape)) for y in range(len(shape[0])) if shape[x][y]==1]
+
+    for gx in range(h):
+        for gy in range(l):
+            trans_coords = [(gx + cx, gy + cy) for cx, cy in coords]
+            if all (0<= px < h and 0<= py < l for px, py in trans_coords):
+                trans_coords = [tuple_to_number((px, py), board)  for px, py in trans_coords]
+                letter_in_board = np.zeros((60,1))
+                for coord in trans_coords :
+                    letter_in_board[coord]=1
+                valid_positions.append(letter_in_board)
+    return valid_positions
+
+
+# -
+
+# On associe à l'aide d'un dictionnaire à chaque lettre sa liste associée (liste de 12 chiffres composées de 0 ou 1)
+
+letters = np.array(["F", "I", "L", "N", "P", "T", "U", "V", "W", "X", "Y", "Z"])
+letters_to_numbers = {}
+for i in range (len(letters)):
+    L = np.zeros((12,1))
+    L[i] = 1
+    letters_to_numbers[letters[i]] = L
+
+# On associe à l'aide d'un dictionnaire à chaque liste (qui correspond donc à une lettre) la liste des positions possibles dans le tableau
+# puis on met dans un tableau toutes les positions possibles pour toutes les lettres possibles
+
+# +
+positions_possibles = {}
 
 def positions(board):
-    position = np.array([])
-    for name, cells in PENTOMINOS.items():
-        current = cell
+    for shape in PENTOMINOS:
+        orient = orientations(shape)
+        for orientation in orient :
+            for e in letters_to_numbers.keys():
+                if e not in positions_possibles.keys():
+                    positions_possibles[e] = [get_valid_positions(orientation,board)]
+                else :
+                    positions_possibles[e].append(get_valid_positions(orientation,board))
+    pos = []
+    for key, value in positions_possibles.items():
+        e = letters_to_numbers[key]
+        for val in value :
+            pos.append(np.concatenate((e.flatten(), np.array(val).flatten())))
+    return pos
 
 
 # -
@@ -79,24 +141,13 @@ BOARD_6_10 = np.zeros((6, 10), dtype=bool)
 BOARD_8_8 = np.zeros((8, 8), dtype=bool)
 BOARD_8_8[3:5, 3:5] = 1
 
-# 2 separate 3x10 rectangles
-# has no solution
-NO_BOARD_2_3_10 = np.zeros((3, 21), dtype=DTYPE)
-NO_BOARD_2_3_10[:, 10] = 1
+print(positions(BOARD_6_10))
 
-# 2 separate 5x6 rectangles
-BOARD_2_5_6 = np.zeros((5, 13), dtype=DTYPE)
-BOARD_2_5_6[:, 6] = 1
+# +
+SMALL_BOARD = np.array([[1, 0, 1], [0, 0, 0], [1, 0, 0]], dtype=bool)
+PENTOMINOS = np.array([ np.array([[0, 1], [1, 1]], dtype=bool)])
 
-# 3 separate 4x5 rectangles
-# has no solution
-NO_BOARD_3_4_5 = np.zeros((3, 23), dtype=DTYPE)
-NO_BOARD_3_4_5[:, 5:6] = 1
+print(positions(SMALL_BOARD))
+# -
 
-BOARD_8_9 = np.zeros((8, 9), dtype=DTYPE)
-BOARD_8_9[::7, ::8] = 1
-BOARD_8_9[1::5, ::8] = 1
-BOARD_8_9[::7, 1::6] = 1
 
-SMALL_BOARD = np.array([[1, 0, 1], [0, 0, 0], [1, 0, 0]], dtype=DTYPE)
-SMALL_PIECE = np.array([[0, 1], [1, 1]], dtype=DTYPE)
