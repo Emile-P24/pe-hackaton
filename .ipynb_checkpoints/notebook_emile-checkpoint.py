@@ -123,7 +123,7 @@ complet = descente(BOARD_6_10,RAW_SHAPES["F"])
 print(complet)
 
 
-
+    
 
 
 

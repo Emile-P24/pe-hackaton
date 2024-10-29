@@ -72,6 +72,43 @@ def orientations(shape):
 # On crée la fonction permettant d'obtenir les positions possibles d'une figure dans le tableau global
 
 # +
+def initialisation(board,letter):
+    liste_board = []
+    boardc = np.copy(board)
+    boardc[:len(letter),:len(letter[0])] = letter
+    liste_board.append(boardc.reshape(60))
+    return liste_board
+
+def translation(board,letter):
+    liste_board = initialisation(board,letter)
+    tableau_trans = liste_board[0].reshape(np.shape(board))
+    while 1 not in tableau_trans[:,-1].tolist():
+        trans = np.array([0] + liste_board[-1].tolist())
+        trans = trans[:-1]
+        tableau_trans = np.array(trans).reshape(np.shape(board))
+        liste_board.append(trans)   
+    return liste_board
+
+def descente(board,letter):
+    liste_board = translation(board,letter)
+    n = len(liste_board)
+    zeros = [0 for i in range(np.shape(board)[1])]
+
+    while np.array(liste_board[-1][-np.shape(board)[1]:]).any() != 1:
+        L = []
+        for i in range(n):
+            trans = np.array(zeros + liste_board[-i].tolist())
+            trans= trans[:-10]
+            L.append(trans)
+        liste_board.append(L)
+    return(liste_board)
+
+
+# -
+
+# La cellule suivante est une alternative à la cellule précédente (il faut adapter la suite du code en conséquence)
+
+# +
 def tuple_to_number(position, board):
     h, l = board.shape
     x, y = position
@@ -118,9 +155,9 @@ def positions(board):
         for orientation in orient :
             for e in letters_to_numbers.keys():
                 if e not in positions_possibles.keys():
-                    positions_possibles[e] = [get_valid_positions(orientation,board)]
+                    positions_possibles[e] = [descente(board,orientation)]
                 else :
-                    positions_possibles[e].append(get_valid_positions(orientation,board))
+                    positions_possibles[e].append(descente(board,orientation))
     pos = []
     for key, value in positions_possibles.items():
         e = letters_to_numbers[key]
@@ -141,13 +178,27 @@ BOARD_6_10 = np.zeros((6, 10), dtype=bool)
 BOARD_8_8 = np.zeros((8, 8), dtype=bool)
 BOARD_8_8[3:5, 3:5] = 1
 
-print(positions(BOARD_6_10))
+# +
+## xcover renvoie les solutions du problème construit précédemment
+
+solutions=next(xcover.covers_bool(positions(BOARD_6_10)))
+
 
 # +
-SMALL_BOARD = np.array([[1, 0, 1], [0, 0, 0], [1, 0, 0]], dtype=bool)
-PENTOMINOS = np.array([ np.array([[0, 1], [1, 1]], dtype=bool)])
+##Programme passant d'un np.array contenant la solution du problème à l'affichage du tableau
 
-print(positions(SMALL_BOARD))
+def pretty_print(Problem,solution,tableau_shape):
+    nbre_lettres=len(solution) #pour savoir ce qui correspond à la lettre et ce qui correspond à sa position
+    probleme_resolu=[]
+    for i in solution:
+        probleme_resolu.append(list(problem[i,])[nbre_lettres:]])
+    tableau=np.zeros(tableau_shape)
+    for i in range(nbre_lettres):
+        for e in probleme_resolu[i,][1]:
+            tableau[n//l,n%l]=i
+    return tableau
+
+
 # -
 
-
+pretty_print(probleme,solutions,(6,10)) #affichage final
