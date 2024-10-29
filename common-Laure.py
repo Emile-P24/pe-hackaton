@@ -25,3 +25,7 @@ PENTOMINOS = [np.array(shape, dtype=DTYPE) for shape in RAW_SHAPES.values()]
 
 def symetrie (L:np.array)->list:
     return L[::-1]
+
+
+def rotation (L:np.array)->list:
+    return symetrie(L.transpose())
